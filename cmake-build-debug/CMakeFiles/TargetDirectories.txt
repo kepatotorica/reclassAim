@@ -1,0 +1,3 @@
+C:/myGit/AssaultCube/internalWithReclass_assaultCube/cmake-build-debug/CMakeFiles/internalWithReclass_assaultCube.dir
+C:/myGit/AssaultCube/internalWithReclass_assaultCube/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/myGit/AssaultCube/internalWithReclass_assaultCube/cmake-build-debug/CMakeFiles/rebuild_cache.dir
