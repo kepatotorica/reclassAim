@@ -51,7 +51,7 @@ public:
     soldier* owner; //0x0008
     int* name; //0x000C
     int* ammo; //0x0010
-    int* clip; //0x0014
+    int* clip; //0x0014r
     int* wait; //0x0018
     __int32 shotsFired; //0x001C
     __int32 reloading; //0x0020
@@ -78,10 +78,55 @@ bool IsValidEnt(soldier* ent)
     return false;
 }
 
+float distance3D(float pX, float pY, float pZ, float eX, float eY, float eZ) {
+    return sqrt(pow(pX - eX, 2.0) + pow(pY - eY, 2.0) + pow(pZ - eZ, 2.0));
+}
 
+soldier* Aimbot(soldier *player, EntList *entList){
+    float fovAllow = 20;
+    float distAllow = 20;
+    uintptr_t smoothNum = 10000;//higher is slower
+    soldier* closest;
+    soldier* enemy;
+    float minDist = 9999999999.0;
+    float enDist = minDist;
+    float angleX, angleY, cloAngleX, cloAngleY = 0.0;
+    int * numOfPlayers = (int*)(0x50f500);
+    bool found = false;
 
+    for (int i = 0; i < (*numOfPlayers); i++)
+    {
+        if (entList && IsValidEnt(entList->ents[i]))
+        {
+        enemy = entList->ents[i];
+            if (enemy->health > 0 && enemy->health <= 100){//check if alive
+                if(enemy->team != player->team && (enemy->team == 0 || enemy->team == 1)) {
+                    enDist = distance3D(player->position.x, player->position.y, player->position.z, enemy->position.x, enemy->position.y, enemy->position.z);
+                    angleX = (-(float) atan2(enemy->head.x - player->head.x, enemy->head.y - player->head.y)) / 3.14159265358979323846 * 180.0f + 180.0f;
+                    angleY = (atan2(enemy->head.z - player->head.z, enDist)) * 180.0f / 3.14159265358979323846;
+                    if (!(abs(angleX - player->aimCoords.x) > fovAllow || abs(angleY - player->aimCoords.y) > fovAllow)) {
+                        if (enDist < minDist) {
+                            closest = enemy;
+                            minDist = enDist;
+                            found = true;
+                            cloAngleX = angleX;
+                            cloAngleY = angleY;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-int * numOfPlayers = (int*)(0x50f500);
+    if (found) {
+        cloAngleX = player->aimCoords.x + (cloAngleX - player->aimCoords.x) / smoothNum;
+        player->aimCoords.x = cloAngleX;
+
+        cloAngleY = player->aimCoords.y + (cloAngleY - player->aimCoords.y) / smoothNum;
+        player->aimCoords.y = cloAngleY;
+    }
+    return player;
+}
 soldier * localPlayer = *(soldier**)0x50F4F4;
 EntList * entList = *(EntList**)0x50F4F8;
 
@@ -91,18 +136,19 @@ DWORD __stdcall hackthread(void* param)
     FILE *pFile = nullptr;
     AllocConsole();
     freopen_s(&pFile, "CONOUT$", "w", stdout);
+    std::cout << "----------------------------------------------------------------------\n";
+    std::cout << "                kiyip's first internal aimbot\n";
+    std::cout << "          right click or left alt activates aimbot\n";
+    std::cout << "                         f3 to quit\n";
+    std::cout << "----------------------------------------------------------------------\n";
+
 
     while (!GetAsyncKeyState(VK_F3))
     {
-        for (int i = 0; i < (*numOfPlayers); i++)
-        {
-            if (entList && IsValidEnt(entList->ents[i]))
-            {
-                std::cout << entList->ents[i]->name << std::endl;
-
-            }
+        if (GetAsyncKeyState(VK_RBUTTON) || GetAsyncKeyState(VK_LCONTROL)) {
+            Aimbot(localPlayer, entList);
         }
-        Sleep(100);
+//        Sleep(10);
     }
 //    system ("CLS");
     std::cout << "good to exit" << std::endl;
